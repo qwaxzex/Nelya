@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#230c24">
+  <link rel="icon" href="data:,">
+  <title></title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #230c24;
+      color: #fff8fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      background: linear-gradient(145deg, #310d24 0%, #230c2d 52%, #100c27 100%);
+    }
+
+    button {
+      color: inherit;
+      font: inherit;
+      touch-action: manipulation;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    #hearts {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      width: min(100%, 560px);
+      height: 100%;
+      min-height: 0;
+      flex-direction: column;
+      align-items: center;
+      padding:
+        max(24px, env(safe-area-inset-top))
+        max(20px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(20px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .sound-toggle {
+      position: absolute;
+      z-index: 3;
+      top: max(14px, env(safe-area-inset-top));
+      right: max(14px, env(safe-area-inset-right));
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border: 1px solid rgb(255 255 255 / 18%);
+      border-radius: 50%;
+      background: rgb(255 255 255 / 8%);
+      font-size: 20px;
+    }
+
+    .title {
+      margin: clamp(28px, 7vh, 60px) 0 12px;
+      color: #ffe3ed;
+      font-size: clamp(42px, 13vw, 68px);
+      font-weight: 750;
+      letter-spacing: -2px;
+      text-align: center;
+      text-shadow: 0 0 16px rgb(255 117 166 / 55%), 0 0 40px rgb(255 66 130 / 32%);
+      animation: title-pulse 3s ease-in-out infinite;
+    }
+
+    .counter {
+      margin: 0;
+      color: rgb(255 232 241 / 76%);
+      font-size: clamp(13px, 3.8vw, 16px);
+      text-align: center;
+    }
+
+    .stage {
+      display: flex;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 0;
+      text-align: center;
+    }
+
+    .card {
+      width: 100%;
+      padding: clamp(20px, 7vw, 34px) clamp(18px, 6vw, 30px);
+      border: 1px solid rgb(255 255 255 / 13%);
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 4%));
+      box-shadow: 0 20px 60px rgb(0 0 0 / 17%);
+      backdrop-filter: blur(8px);
+    }
+
+    .wish {
+      min-height: 5.2em;
+      margin: 0;
+      color: #fff3f7;
+      font-size: clamp(21px, 6vw, 30px);
+      font-weight: 550;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .fade-in {
+      animation: fade-in 450ms ease both;
+    }
+
+    .primary-button {
+      min-width: 154px;
+      min-height: 52px;
+      margin-top: 24px;
+      padding: 13px 26px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(100deg, #ff719c, #ff4f83);
+      box-shadow: 0 8px 28px rgb(255 74 129 / 32%);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      transition: transform 160ms ease, opacity 160ms ease;
+    }
+
+    .primary-button:active,
+    .sound-toggle:active,
+    .gallery-arrow:active {
+      transform: scale(.96);
+    }
+
+    .final-message {
+      margin: 0;
+      color: #ffe1ec;
+      font-size: clamp(34px, 10vw, 52px);
+      line-height: 1.2;
+      text-shadow: 0 0 24px rgb(255 117 166 / 42%);
+    }
+
+    .gallery {
+      width: 100%;
+      flex: 0 1 auto;
+      margin: 0 0 8px;
+    }
+
+    .gallery[hidden] {
+      display: none;
+    }
+
+    .gallery-frame {
+      position: relative;
+      width: min(100%, 330px);
+      height: clamp(118px, 25vh, 190px);
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid rgb(255 255 255 / 17%);
+      border-radius: 20px;
+      background: rgb(255 255 255 / 5%);
+      touch-action: pan-y;
+    }
+
+    .gallery-track {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 280ms ease;
+    }
+
+    .gallery-track img {
+      width: 100%;
+      height: 100%;
+      flex: 0 0 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .gallery-arrow {
+      position: absolute;
+      top: 50%;
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 1px solid rgb(255 255 255 / 30%);
+      border-radius: 50%;
+      background: rgb(22 10 29 / 55%);
+      font-size: 23px;
+      transform: translateY(-50%);
+    }
+
+    .gallery-arrow:active {
+      transform: translateY(-50%) scale(.96);
+    }
+
+    .gallery-arrow.previous {
+      left: 8px;
+    }
+
+    .gallery-arrow.next {
+      right: 8px;
+    }
+
+    .gallery-dots {
+      display: flex;
+      min-height: 18px;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .gallery-dot {
+      width: 7px;
+      height: 7px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgb(255 255 255 / 35%);
+    }
+
+    .gallery-dot[aria-current="true"] {
+      background: #ff86aa;
+      box-shadow: 0 0 10px rgb(255 117 166 / 65%);
+    }
+
+    @keyframes title-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.035); }
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="hearts" aria-hidden="true"></canvas>
+  <main class="app">
+    <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Включить звук">🔇</button>
+    <h1 class="title" id="title"></h1>
+    <p class="counter" id="counter"></p>
+    <section class="stage" id="stage" aria-live="polite"></section>
+    <section class="gallery" id="gallery" hidden>
+      <div class="gallery-frame" id="gallery-frame">
+        <div class="gallery-track" id="gallery-track"></div>
+        <button class="gallery-arrow previous" id="gallery-previous" type="button" aria-label="Предыдущее фото">‹</button>
+        <button class="gallery-arrow next" id="gallery-next" type="button" aria-label="Следующее фото">›</button>
+      </div>
+      <div class="gallery-dots" id="gallery-dots"></div>
+    </section>
+  </main>
+  <audio id="music" preload="none"></audio>
+  <script>
+    const CONFIG = {
+      name: "Неля",
+      startDate: "2026-10-12T00:00:00",
+      wishes: [
+        "Ты самый родной мой человек.",
+        "Я обожаю твою улыбку и то, как ты смеёшься.",
+        "Рядом с тобой всё становится проще и теплее.",
+        "Я желаю тебе счастья, спокойных дней и исполнения всех желаний.",
+        "Спасибо, что ты у меня есть.",
+        "Я очень тебя люблю."
+      ],
+      photos: [],
+      // Треки лежат в webapp/music/ и играют по кругу в этом порядке.
+      tracks: [
+        "music/1.mp3", // The Neighbourhood, Flawless
+        "music/2.mp3", // Пошлая Молли, Мишка (feat. KATERINA)
+        "music/3.mp3", // Пошлая Молли, Спать обой (Moonlord remix)
+        "music/4.mp3"  // VILLIAN, madk1d, Династия
+      ],
+      titleSuffix: " ❤️",
+      pageTitleSuffix: " · сюрприз",
+      counterPrefix: "Мы вместе: ",
+      daysUnit: "дней",
+      hoursUnit: "часов",
+      startMessage: "Для тебя приготовлено кое-что особенное.",
+      startButton: "Начать",
+      nextButton: "Дальше",
+      replayButton: "Ещё раз",
+      finalMessage: "Я люблю тебя ❤️",
+      typewriterLabel: "Пожелание",
+      soundOnLabel: "Выключить звук",
+      soundOffLabel: "Включить звук",
+      galleryLabel: "Фотография",
+      galleryTitle: "Галерея фотографий",
+      previousPhotoLabel: "Предыдущее фото",
+      nextPhotoLabel: "Следующее фото",
+    };
+
+    const telegram = window.Telegram?.WebApp;
+    telegram?.ready();
+    telegram?.expand();
+    telegram?.disableVerticalSwipes?.();
+    telegram?.setHeaderColor?.("#230c24");
+    telegram?.setBackgroundColor?.("#230c24");
+
+    const stage = document.getElementById("stage");
+    const title = document.getElementById("title");
+    const counter = document.getElementById("counter");
+    const gallery = document.getElementById("gallery");
+    const galleryTrack = document.getElementById("gallery-track");
+    const galleryDots = document.getElementById("gallery-dots");
+    const music = document.getElementById("music");
+    const soundToggle = document.getElementById("sound-toggle");
+    let wishIndex = -1;
+    let galleryIndex = 0;
+    let typewriterTimer;
+    let soundEnabled = false;
+
+    title.textContent = `${CONFIG.name}${CONFIG.titleSuffix}`;
+    document.title = `${CONFIG.name}${CONFIG.titleSuffix}${CONFIG.pageTitleSuffix}`;
+    gallery.setAttribute("aria-label", CONFIG.galleryTitle);
+    document.getElementById("gallery-previous").setAttribute("aria-label", CONFIG.previousPhotoLabel);
+    document.getElementById("gallery-next").setAttribute("aria-label", CONFIG.nextPhotoLabel);
+
+    function haptic() {
+      telegram?.HapticFeedback?.impactOccurred?.("light");
+    }
+
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("button")) haptic();
+    });
+
+    function plural(n, one, few, many) {
+      const m10 = n % 10;
+      const m100 = n % 100;
+      if (m10 === 1 && m100 !== 11) return one;
+      if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+      return many;
+    }
+
+    function updateCounter() {
+      const start = new Date(CONFIG.startDate).getTime();
+      const elapsed = Math.max(0, Date.now() - start);
+      const days = Math.floor(elapsed / 86_400_000);
+      const hours = Math.floor((elapsed % 86_400_000) / 3_600_000);
+      counter.textContent = `${CONFIG.counterPrefix}${days} ${plural(days, "день", "дня", "дней")}, ${hours} ${plural(hours, "час", "часа", "часов")}`;
+    }
+
+    updateCounter();
+    window.setInterval(updateCounter, 60_000);
+
+    let trackIndex = 0;
+    let trackErrors = 0;
+
+    // Запускаем трек при нажатии, чтобы браузер разрешил воспроизведение.
+    function playTrack(index) {
+      const count = CONFIG.tracks.length;
+      if (!count) return setSound(false);
+      trackIndex = (index + count) % count;
+      music.src = CONFIG.tracks[trackIndex];
+      const playing = music.play();
+      if (playing) playing.catch(() => {
+        if (music.error === null) setSound(false);
+      });
+    }
+
+    music.addEventListener("ended", () => {
+      trackErrors = 0;
+      if (soundEnabled) playTrack(trackIndex + 1);
+    });
+
+    music.addEventListener("error", () => {
+      if (!soundEnabled) return;
+      trackErrors += 1;
+      if (trackErrors >= CONFIG.tracks.length) {
+        trackErrors = 0;
+        setSound(false);
+      } else {
+        playTrack(trackIndex + 1);
+      }
+    });
+
+    function setSound(enabled) {
+      soundEnabled = enabled;
+      soundToggle.textContent = enabled ? "🔊" : "🔇";
+      soundToggle.setAttribute("aria-label", enabled ? CONFIG.soundOnLabel : CONFIG.soundOffLabel);
+      if (!enabled) {
+        music.pause();
+        return;
+      }
+      if (music.getAttribute("src")) {
+        const playing = music.play();
+        if (playing) playing.catch(() => setSound(false));
+      } else {
+        playTrack(trackIndex);
+      }
+    }
+
+    soundToggle.addEventListener("click", () => setSound(!soundEnabled));
+
+    function typeWish(text, container) {
+      window.clearInterval(typewriterTimer);
+      let position = 0;
+      container.textContent = "";
+      typewriterTimer = window.setInterval(() => {
+        container.textContent += text[position];
+        position += 1;
+        if (position >= text.length) window.clearInterval(typewriterTimer);
+      }, 34);
+    }
+
+    function showStart() {
+      wishIndex = -1;
+      const card = document.createElement("div");
+      card.className = "card fade-in";
+      const message = document.createElement("p");
+      message.className = "wish";
+      message.textContent = `${CONFIG.name}, ${CONFIG.startMessage.charAt(0).toLowerCase()}${CONFIG.startMessage.slice(1)}`;
+      const button = document.createElement("button");
+      button.className = "primary-button";
+      button.id = "start-button";
+      button.type = "button";
+      button.textContent = CONFIG.startButton;
+      button.addEventListener("click", () => {
+        setSound(true);
+        showWish(0);
+      });
+      card.append(message, button);
+      stage.replaceChildren(card);
+    }
+
+    function showWish(index) {
+      wishIndex = index;
+      const card = document.createElement("div");
+      card.className = "card fade-in";
+      const message = document.createElement("p");
+      message.className = "wish";
+      message.setAttribute("aria-label", `${CONFIG.typewriterLabel} ${index + 1}`);
+      const button = document.createElement("button");
+      button.className = "primary-button";
+      button.type = "button";
+      button.textContent = CONFIG.nextButton;
+      button.addEventListener("click", () => {
+        if (wishIndex + 1 < CONFIG.wishes.length) {
+          showWish(wishIndex + 1);
+        } else {
+          showFinal();
+        }
+      });
+      card.append(message, button);
+      stage.replaceChildren(card);
+      typeWish(CONFIG.wishes[index], message);
+      if (index === CONFIG.wishes.length - 1) burstHearts();
+    }
+
+    function showFinal() {
+      const card = document.createElement("div");
+      card.className = "card fade-in";
+      const message = document.createElement("p");
+      message.className = "final-message";
+      message.textContent = CONFIG.finalMessage;
+      const button = document.createElement("button");
+      button.className = "primary-button";
+      button.id = "replay-button";
+      button.type = "button";
+      button.textContent = CONFIG.replayButton;
+      button.addEventListener("click", showStart);
+      card.append(message, button);
+      stage.replaceChildren(card);
+    }
+
+    function loadGallery(paths) {
+      const candidates = paths.slice(0, 6);
+      const loaded = candidates.map((src) => new Promise((resolve) => {
+        const image = new Image();
+        image.onload = () => resolve({ src, width: image.naturalWidth, height: image.naturalHeight });
+        image.onerror = () => resolve(null);
+        image.src = src;
+      }));
+
+      Promise.all(loaded).then((photos) => {
+        const available = photos.filter(Boolean);
+        if (!available.length) return;
+        gallery.hidden = false;
+        galleryTrack.replaceChildren(...available.map((photo, index) => {
+          const image = document.createElement("img");
+          image.src = photo.src;
+          image.alt = `${CONFIG.galleryLabel} ${index + 1}`;
+          return image;
+        }));
+        galleryDots.replaceChildren(...available.map((_, index) => {
+          const dot = document.createElement("button");
+          dot.className = "gallery-dot";
+          dot.type = "button";
+          dot.setAttribute("aria-label", `${CONFIG.galleryLabel} ${index + 1}`);
+          dot.addEventListener("click", () => setGalleryIndex(index));
+          return dot;
+        }));
+        document.getElementById("gallery-previous").hidden = available.length < 2;
+        document.getElementById("gallery-next").hidden = available.length < 2;
+        setGalleryIndex(0);
+      });
+    }
+
+    function setGalleryIndex(index) {
+      const count = galleryTrack.children.length;
+      if (!count) return;
+      galleryIndex = (index + count) % count;
+      galleryTrack.style.transform = `translateX(-${galleryIndex * 100}%)`;
+      [...galleryDots.children].forEach((dot, dotIndex) => {
+        dot.setAttribute("aria-current", String(dotIndex === galleryIndex));
+      });
+    }
+
+    document.getElementById("gallery-previous").addEventListener("click", () => setGalleryIndex(galleryIndex - 1));
+    document.getElementById("gallery-next").addEventListener("click", () => setGalleryIndex(galleryIndex + 1));
+    const galleryFrame = document.getElementById("gallery-frame");
+    let swipeStartX = null;
+    galleryFrame.addEventListener("pointerdown", (event) => {
+      swipeStartX = event.clientX;
+    });
+    galleryFrame.addEventListener("pointerup", (event) => {
+      if (swipeStartX === null) return;
+      const distance = event.clientX - swipeStartX;
+      if (Math.abs(distance) > 35) setGalleryIndex(galleryIndex + (distance < 0 ? 1 : -1));
+      swipeStartX = null;
+    });
+    galleryFrame.addEventListener("pointercancel", () => {
+      swipeStartX = null;
+    });
+
+    const canvas = document.getElementById("hearts");
+    const context = canvas.getContext("2d");
+    const floatingHearts = [];
+    const heartGlyph = "♥";
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+    let lastHeartTime = 0;
+
+    function resizeCanvas() {
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvasWidth = window.innerWidth;
+      canvasHeight = window.innerHeight;
+      canvas.width = Math.round(canvasWidth * ratio);
+      canvas.height = Math.round(canvasHeight * ratio);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function addHeart(x, y, size, opacity, speed) {
+      floatingHearts.push({ x, y, size, opacity, speed, drift: Math.random() * 0.5 - 0.25 });
+    }
+
+    function burstHearts() {
+      for (let index = 0; index < 30; index += 1) {
+        addHeart(
+          canvasWidth * (0.2 + Math.random() * 0.6),
+          canvasHeight * (0.25 + Math.random() * 0.5),
+          12 + Math.random() * 28,
+          0.65 + Math.random() * 0.3,
+          0.4 + Math.random() * 1.4
+        );
+      }
+    }
+
+    function drawHearts(time) {
+      context.clearRect(0, 0, canvasWidth, canvasHeight);
+      if (time - lastHeartTime > 520) {
+        addHeart(Math.random() * canvasWidth, canvasHeight + 24, 12 + Math.random() * 24, 0.15 + Math.random() * 0.35, 0.25 + Math.random() * 0.45);
+        lastHeartTime = time;
+      }
+      for (let index = floatingHearts.length - 1; index >= 0; index -= 1) {
+        const heart = floatingHearts[index];
+        heart.y -= heart.speed;
+        heart.x += heart.drift;
+        context.globalAlpha = heart.opacity;
+        context.fillStyle = "#ff9cba";
+        context.font = `${heart.size}px serif`;
+        context.fillText(heartGlyph, heart.x, heart.y);
+        if (heart.y < -40) floatingHearts.splice(index, 1);
+      }
+      context.globalAlpha = 1;
+      window.requestAnimationFrame(drawHearts);
+    }
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    window.requestAnimationFrame(drawHearts);
+    loadGallery(CONFIG.photos);
+    showStart();
+  </script>
+</body>
+</html>
